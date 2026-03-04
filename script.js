@@ -15,8 +15,9 @@ window.onload = () => {
 };
 
 function checkLogin() {
-  const u = document.getElementById('login-user').value;
-  const p = document.getElementById('login-pass').value;
+  // ดึงค่ามา ตัดช่องว่างหน้าหลังทิ้ง และแปลงเป็นตัวพิมพ์เล็กทั้งหมด
+  const u = document.getElementById('login-user').value.trim().toLowerCase();
+  const p = document.getElementById('login-pass').value.trim();
 
   // 1. สิทธิ์ Admin (จัดการได้ทั้งหมด)
   if (u === 'admin' && p === '1234') { 
@@ -34,7 +35,6 @@ function checkLogin() {
     document.getElementById('login-error').style.display = 'block';
   }
 }
-
 function finishLogin() {
   document.getElementById('login-overlay').style.opacity = '0';
   setTimeout(() => {
