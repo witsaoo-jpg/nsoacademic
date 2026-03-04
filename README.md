@@ -1,2 +1,33 @@
-# nsoacademic
-Academic Work Management System — Chonburi Hospital
+# 🏥 ระบบจัดการผลงานวิชาการ โรงพยาบาลชลบุรี
+**(Academic Work Management System — Chonburi Hospital)**
+
+เว็บแอปพลิเคชันสำหรับรวบรวม จัดเก็บ และค้นหาข้อมูลผลงานวิชาการของบุคลากรในโรงพยาบาลชลบุรี ครอบคลุมผลงานประเภท วิจัย, R2R, CQI และ นวัตกรรม ออกแบบมาให้ใช้งานง่าย รองรับการแสดงผลบนสมาร์ทโฟนและแท็บเล็ต และใช้ Google Sheets เป็นฐานข้อมูลหลักเพื่อให้ง่ายต่อการจัดการ
+
+---
+
+## ✨ ฟีเจอร์เด่น (Features)
+* **ระบบจัดการสิทธิ์ (Role-Based Access):**
+    * `Admin`: สามารถเพิ่ม แก้ไข ลบ และดูรายละเอียดผลงานได้ทั้งหมด
+    * `User`: สามารถค้นหาและดูรายละเอียดผลงานได้อย่างเดียว (ป้องกันการแก้ไขข้อมูลโดยไม่ตั้งใจ)
+* **ระบบค้นหาและกรองข้อมูล (Filter & Search):** ค้นหาจากชื่อผลงาน ชื่อผู้จัดทำ ประเภทผลงาน และหน่วยงานได้แบบ Real-time
+* **เชื่อมต่อ Google Sheets:** ใช้ Google Apps Script (GAS) เป็น API Backend ทำให้ข้อมูลอัปเดตตรงไปยัง Spreadsheet อัตโนมัติ
+* **ระบบ Cache:** โหลดข้อมูลได้รวดเร็ว ลดปัญหาคอขวดเมื่อมีผู้ใช้งานพร้อมกันจำนวนมาก
+* **Responsive Design:** หน้าจอปรับขนาดอัตโนมัติ รองรับการทำงานบน PC, Tablet และ Mobile เต็มรูปแบบ
+
+---
+
+## 🛠️ เครื่องมือที่ใช้พัฒนา (Tech Stack)
+* **Frontend:** HTML5, CSS3, Vanilla JavaScript (ไม่ใช้ Framework ทำให้ระบบเบาและโหลดเร็ว)
+* **Backend / API:** Google Apps Script (GAS)
+* **Database:** Google Sheets
+
+---
+
+## 📂 โครงสร้างไฟล์ (File Structure)
+```text
+📁 chonburi-academic-system/
+│
+├── index.html       # โครงสร้างหน้าเว็บหลักและหน้าต่าง Popup
+├── style.css        # จัดการความสวยงามและ Responsive Design
+├── script.js        # ลอจิกการทำงาน, ระบบ Login และการเชื่อมต่อ API
+└── README.md        # ไฟล์เอกสารแนะนำโปรเจกต์
