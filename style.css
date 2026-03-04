@@ -160,3 +160,64 @@ tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
 .edit-mode-banner { background: #FFF8E1; border: 1.5px solid var(--warn); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; font-size: 13px; font-weight: 600; color: #7a4f00; display: none; }
 .edit-mode-banner.open { display: flex; }
 .action-btns { display: flex; gap: 6px; }
+/* ─── อัปเดตเพิ่มเติมสำหรับการแสดงผลบนมือถือและแท็บเล็ต ─── */
+
+@media (max-width: 768px) {
+  /* 1. ปรับส่วนหัวเว็บ (Header) ให้เรียงซ้อนกันสวยงาม ไม่ล้นจอ */
+  .header-inner {
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 16px 20px;
+    gap: 16px;
+  }
+  
+  /* 2. ปรับกล่องสถิติให้ขยายพอดีหน้าจอมือถือ */
+  .header-stats {
+    width: 100%;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .stat-badge {
+    flex: 1 1 calc(25% - 8px); /* แบ่งเป็น 4 ช่องเท่าๆ กัน */
+    min-width: 60px;
+    padding: 6px 4px;
+  }
+  
+  .stat-badge .num { font-size: 18px; }
+  .stat-badge .lbl { font-size: 9px; }
+
+  /* 3. ปรับระยะห่างขอบซ้าย-ขวาของหน้าจอหลัก */
+  .app {
+    padding: 20px 16px 60px;
+    gap: 20px;
+  }
+
+  /* 4. ปรับหน้าต่าง Popup ให้กว้างพอดีจอมือถือ */
+  .modal {
+    width: 95%;
+    padding: 0;
+  }
+
+  .modal-body {
+    padding: 20px 16px;
+  }
+  
+  .detail-row {
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 16px;
+  }
+  
+  .detail-label {
+    color: var(--blue);
+  }
+}
+
+@media (max-width: 480px) {
+  /* สำหรับจอมือถือขนาดเล็กมาก ให้กล่องสถิติแบ่งเป็น 2 แถว */
+  .stat-badge {
+    flex: 1 1 calc(50% - 8px);
+  }
+}
