@@ -174,11 +174,16 @@ function applyFilters() {
         <td class="td-title">${r.title}<small>${r.author}</small></td>
         <td style="font-size:12px;color:var(--muted);">${r.ward}</td>
         <td style="font-size:12px;">${r.year}</td>
+        
+        <td>
+          ${r.link ? `<a href="${r.link}" target="_blank" style="color:var(--blue);text-decoration:none;font-size:12px;font-weight:600;">🔗 เปิดดู</a>` : '<span style="color:#ccc;font-size:12px;">-</span>'}
+        </td>
+
         <td>
           <div class="action-btns">
-            <button class="btn btn-sm btn-outline" onclick="viewRecord(${r.id})">👁️</button>
-            <button class="btn btn-sm btn-warn" onclick="editRecord(${r.id})">✏️</button>
-            <button class="btn btn-sm btn-danger" onclick="promptDelete(${r.id})">🗑️</button>
+            <button class="btn btn-sm btn-outline" onclick="viewRecord('${r.id}')">👁️</button>
+            <button class="btn btn-sm btn-warn" onclick="editRecord('${r.id}')">✏️</button>
+            <button class="btn btn-sm btn-danger" onclick="promptDelete('${r.id}')">🗑️</button>
           </div>
         </td>
       </tr>
@@ -186,19 +191,17 @@ function applyFilters() {
   }
 }
 
-function populateWardFilter() {
-  const wards = [...new Set(records.map(r=>r.ward))].sort();
-  const sel = document.getElementById('filter-ward');
-  sel.innerHTML = '<option value="">ทุกหน่วยงาน</option>' + wards.map(w=>`<option>${w}</option>`).join('');
-}
-
 function viewRecord(id) {
   const r = records.find(r=>r.id==id);
+  // ✨ เพิ่มการแสดงผล ลิงก์ และ หมายเหตุ ในหน้าต่างรายละเอียด
   document.getElementById('view-modal-body').innerHTML = `
     <div class="detail-row"><span class="detail-label">ประเภท</span><span class="detail-val">${r.type}</span></div>
     <div class="detail-row"><span class="detail-label">ชื่องาน</span><span class="detail-val">${r.title}</span></div>
     <div class="detail-row"><span class="detail-label">ผู้จัดทำ</span><span class="detail-val">${r.author}</span></div>
     <div class="detail-row"><span class="detail-label">หน่วยงาน</span><span class="detail-val">${r.ward}</span></div>
+    <div class="detail-row"><span class="detail-label">ปีงบประมาณ</span><span class="detail-val">${r.year}</span></div>
+    ${r.link ? `<div class="detail-row"><span class="detail-label">ลิงก์ผลงาน</span><span class="detail-val"><a href="${r.link}" target="_blank" style="color:var(--blue);">🔗 คลิกเพื่อเปิดดูเอกสาร</a></span></div>` : ''}
+    ${r.note ? `<div class="detail-row"><span class="detail-label">หมายเหตุ</span><span class="detail-val">${r.note}</span></div>` : ''}
   `;
   openModal('view-modal');
 }
