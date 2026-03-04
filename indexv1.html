@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบผลงานวิชาการ — โรงพยาบาลชลบุรี</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --navy: #0B2545;
+      --navy-mid: #163872;
+      --blue: #1B4FBF;
+      --accent: #00C9A7;
+      --accent2: #FFB703;
+      --light: #F0F4FF;
+      --surface: #FFFFFF;
+      --border: #D5E0F5;
+      --text: #1a2a4a;
+      --muted: #6b7fa3;
+      --danger: #E63946;
+      --warn: #FFB703;
+      --success: #00C9A7;
+      --shadow: 0 4px 32px rgba(11,37,69,0.10);
+      --radius: 16px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Sarabun', sans-serif;
+      background: var(--light);
+      color: var(--text);
+      min-height: 100vh;
+    }
+
+    /* ── Login Overlay ── */
+    #login-overlay {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      transition: opacity 0.3s;
+    }
+    .login-box {
+      background: #fff;
+      padding: 40px;
+      border-radius: var(--radius);
+      box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      width: 90%;
+      max-width: 360px;
+      text-align: center;
+    }
+    .login-box h2 { font-family: 'Noto Serif Thai', serif; color: var(--navy); margin-bottom: 24px; font-size: 20px; }
+    .login-box input {
+      width: 100%; padding: 12px 16px; margin-bottom: 16px; border: 1.5px solid var(--border);
+      border-radius: 10px; font-family: 'Sarabun', sans-serif; font-size: 15px; outline: none;
+    }
+    .login-box input:focus { border-color: var(--blue); }
+    .login-box button { width: 100%; padding: 12px; font-size: 16px; }
+
+    /* ── Loading Spinner ── */
+    #loading-overlay {
+      position: fixed; inset: 0; background: rgba(255,255,255,0.8); backdrop-filter: blur(2px);
+      z-index: 9990; display: none; align-items: center; justify-content: center; flex-direction: column; color: var(--navy); font-weight: 600;
+    }
+    .spinner {
+      border: 4px solid rgba(27,79,191,0.2); border-left-color: var(--blue); border-radius: 50%;
+      width: 40px; height: 40px; animation: spin 1s linear infinite; margin-bottom: 10px;
+    }
+    @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+    /* ── Header ── */
+    header { background: linear-gradient(135deg, var(--navy) 0%, var(--navy-mid) 60%, var(--blue) 100%); color: #fff; padding: 0; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 24px rgba(11,37,69,0.25); }
+    .header-inner { max-width: 1200px; margin: auto; display: flex; align-items: center; justify-content: space-between; padding: 18px 32px; gap: 16px; }
+    .logo-area { display: flex; align-items: center; gap: 16px; }
+    .logo-circle { width: 48px; height: 48px; background: rgba(255,255,255,0.15); border: 2px solid rgba(0,201,167,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 22px; }
+    .header-title h1 { font-family: 'Noto Serif Thai', serif; font-size: 18px; font-weight: 700; letter-spacing: 0.02em; }
+    .header-title p { font-size: 12px; opacity: 0.7; margin-top: 1px; }
+    .header-stats { display: flex; gap: 20px; align-items: center; }
+    .stat-badge { text-align: center; background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2); border-radius: 10px; padding: 6px 16px; min-width: 64px; }
+    .stat-badge .num { font-size: 22px; font-weight: 700; color: var(--accent); line-height: 1; }
+    .stat-badge .lbl { font-size: 10px; opacity: 0.75; margin-top: 2px; }
+
+    /* ── Layout ── */
+    .app { max-width: 1200px; margin: auto; padding: 32px 20px 60px; display: grid; grid-template-columns: 380px 1fr; gap: 28px; }
+    @media(max-width:900px){ .app { grid-template-columns: 1fr; } }
+
+    /* ── Card ── */
+    .card { background: var(--surface); border-radius: var(--radius); box-shadow: var(--shadow); border: 1px solid var(--border); overflow: hidden; }
+    .card-header { padding: 20px 24px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+    .card-header h2 { font-size: 15px; font-weight: 700; color: var(--navy); }
+    .card-header .badge { background: var(--light); color: var(--blue); border: 1px solid var(--border); border-radius: 20px; font-size: 11px; padding: 3px 10px; font-weight: 600; }
+    .card-body { padding: 24px; }
+
+    /* ── Form ── */
+    .form-group { margin-bottom: 18px; }
+    .form-label { display: block; font-size: 13px; font-weight: 600; color: var(--navy); margin-bottom: 6px; }
+    .form-label span { color: var(--danger); margin-left: 2px; }
+    .form-control, .form-select { width: 100%; padding: 10px 14px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Sarabun', sans-serif; font-size: 14px; color: var(--text); background: #fafcff; outline: none; appearance: none; }
+    .form-control:focus, .form-select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(27,79,191,0.12); background: #fff; }
+    .type-pills { display: flex; flex-wrap: wrap; gap: 8px; }
+    .type-pill { border: 1.5px solid var(--border); border-radius: 20px; padding: 6px 14px; font-size: 13px; font-weight: 500; cursor: pointer; background: #fafcff; color: var(--muted); transition: all 0.18s; user-select: none; }
+    .type-pill:hover { border-color: var(--blue); color: var(--blue); }
+    .type-pill.active { background: var(--blue); border-color: var(--blue); color: #fff; }
+    .type-pill.active.research { background: #1B4FBF; }
+    .type-pill.active.r2r { background: #00897B; border-color: #00897B; }
+    .type-pill.active.cqi { background: #E65100; border-color: #E65100; }
+    .type-pill.active.innov { background: #6A0DAD; border-color: #6A0DAD; }
+
+    /* ── Buttons ── */
+    .btn { display: inline-flex; align-items: center; justify-content: center; gap: 7px; padding: 10px 20px; border-radius: 10px; border: none; font-family: 'Sarabun', sans-serif; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.18s; }
+    .btn-primary { background: var(--blue); color: #fff; }
+    .btn-success { background: var(--accent); color: #fff; }
+    .btn-warn { background: var(--warn); color: var(--navy); }
+    .btn-danger { background: var(--danger); color: #fff; }
+    .btn-outline { background: transparent; border: 1.5px solid var(--border); color: var(--muted); }
+    .btn-outline:hover { border-color: var(--blue); color: var(--blue); }
+    .btn-block { width: 100%; }
+    .btn:disabled { opacity: 0.55; cursor: not-allowed; }
+    .btn-sm { padding: 6px 12px; font-size: 12px; border-radius: 7px; }
+    .form-actions { display: flex; gap: 10px; margin-top: 6px; }
+
+    /* ── Table & Rights ── */
+    .panel-right { display: flex; flex-direction: column; gap: 20px; }
+    .filter-bar { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    .search-wrap { position: relative; flex: 1; min-width: 180px; }
+    .search-wrap svg { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--muted); }
+    .search-wrap input { width: 100%; padding: 9px 12px 9px 36px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Sarabun', sans-serif; font-size: 13px; outline: none; }
+    .filter-select { padding: 9px 12px; border: 1.5px solid var(--border); border-radius: 10px; font-family: 'Sarabun', sans-serif; font-size: 13px; outline: none; cursor: pointer; }
+    
+    .table-wrap { overflow-x: auto; border-radius: var(--radius); }
+    table { width: 100%; border-collapse: collapse; min-width: 600px; }
+    thead th { background: var(--navy); color: rgba(255,255,255,0.85); padding: 12px 16px; font-size: 12px; font-weight: 600; text-align: left; white-space: nowrap; }
+    tbody tr { border-bottom: 1px solid var(--border); transition: background 0.15s; }
+    tbody tr:hover { background: #f4f7ff; }
+    tbody td { padding: 12px 16px; font-size: 13px; vertical-align: middle; }
+    .td-title { font-weight: 600; color: var(--navy); max-width: 200px; }
+    .td-title small { display: block; color: var(--muted); font-weight: 400; font-size: 11px; margin-top: 2px; }
+    
+    .type-tag { display: inline-block; border-radius: 6px; padding: 3px 9px; font-size: 11px; font-weight: 700; white-space: nowrap; }
+    .tag-วิจัย { background: #dbeafe; color: #1e40af; }
+    .tag-R2R { background: #d1fae5; color: #065f46; }
+    .tag-CQI { background: #fff3e0; color: #bf360c; }
+    .tag-นวัตกรรม { background: #ede9fe; color: #4c1d95; }
+
+    /* ── Modals & Toast ── */
+    .modal-overlay { position: fixed; inset: 0; background: rgba(11,37,69,0.55); backdrop-filter: blur(3px); z-index: 200; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.2s; }
+    .modal-overlay.open { opacity: 1; pointer-events: all; }
+    .modal { background: #fff; border-radius: var(--radius); width: 90%; max-width: 520px; box-shadow: 0 20px 60px rgba(11,37,69,0.25); transform: scale(0.95); transition: 0.25s; }
+    .modal-overlay.open .modal { transform: scale(1); }
+    .modal-header { padding: 20px 24px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; }
+    .modal-body { padding: 24px; }
+    .modal-footer { padding: 16px 24px; border-top: 1px solid var(--border); display: flex; justify-content: flex-end; gap: 10px; }
+    .modal-close { background: none; border: none; font-size: 20px; cursor: pointer; color: var(--muted); }
+    
+    #toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(80px); background: var(--navy); color: #fff; padding: 12px 24px; border-radius: 30px; font-size: 14px; z-index: 9999; display: flex; align-items: center; gap: 10px; transition: 0.3s; }
+    #toast.show { transform: translateX(-50%) translateY(0); }
+    #toast.success { background: var(--accent); }
+    #toast.error { background: var(--danger); }
+    #toast.warn { background: var(--warn); color: var(--navy); }
+
+    .detail-row { display: flex; gap: 12px; margin-bottom: 14px; }
+    .detail-label { font-size: 12px; font-weight: 600; color: var(--muted); min-width: 100px; }
+    .detail-val { font-size: 14px; color: var(--text); font-weight: 500; }
+    .edit-mode-banner { background: #FFF8E1; border: 1.5px solid var(--warn); border-radius: 10px; padding: 10px 14px; margin-bottom: 18px; font-size: 13px; font-weight: 600; color: #7a4f00; display: none; }
+    .edit-mode-banner.open { display: flex; }
+    .action-btns { display: flex; gap: 6px; }
+  </style>
+</head>
+<body>
+
+<div id="login-overlay">
+  <div class="login-box">
+    <h2>🏥 เข้าสู่ระบบ<br><small style="font-size:14px;color:var(--muted);">ระบบผลงานวิชาการ</small></h2>
+    <input type="text" id="login-user" class="form-control" placeholder="ชื่อผู้ใช้ (admin)" style="margin-bottom:10px;">
+    <input type="password" id="login-pass" class="form-control" placeholder="รหัสผ่าน (1234)" style="margin-bottom:16px;" onkeypress="if(event.key==='Enter') checkLogin()">
+    <button class="btn btn-primary btn-block" onclick="checkLogin()">เข้าสู่ระบบ</button>
+    <p id="login-error" style="color:var(--danger);font-size:13px;display:none;margin-top:12px;">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!</p>
+  </div>
+</div>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <span id="loading-text">กำลังประสานข้อมูลกับระบบ...</span>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-circle">🏥</div>
+      <div class="header-title">
+        <h1>ระบบผลงานวิชาการ โรงพยาบาลชลบุรี</h1>
+        <p>Academic Work Management System — Chonburi Hospital</p>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-badge"><div class="num" id="stat-total">0</div><div class="lbl">ทั้งหมด</div></div>
+      <div class="stat-badge"><div class="num" id="stat-research">0</div><div class="lbl">วิจัย/R2R</div></div>
+      <div class="stat-badge"><div class="num" id="stat-cqi">0</div><div class="lbl">CQI</div></div>
+      <div class="stat-badge"><div class="num" id="stat-innov">0</div><div class="lbl">นวัตกรรม</div></div>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:#fff;" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h2 id="form-heading">➕ เพิ่มผลงานวิชาการ</h2>
+        <span class="badge" id="form-mode-badge">ใหม่</span>
+      </div>
+      <div class="card-body">
+        <div class="edit-mode-banner" id="edit-banner">
+          ✏️ กำลังแก้ไขผลงาน — กรุณาตรวจสอบข้อมูลก่อนบันทึก
+        </div>
+        <input type="hidden" id="record-id">
+
+        <div class="form-group">
+          <div class="form-label">ประเภทผลงาน <span>*</span></div>
+          <div class="type-pills">
+            <div class="type-pill research" data-val="วิจัย" onclick="selectType(this)">🔬 วิจัย</div>
+            <div class="type-pill r2r" data-val="R2R" onclick="selectType(this)">📋 R2R</div>
+            <div class="type-pill cqi" data-val="CQI" onclick="selectType(this)">📈 CQI</div>
+            <div class="type-pill innov" data-val="นวัตกรรม" onclick="selectType(this)">💡 นวัตกรรม</div>
+          </div>
+          <input type="hidden" id="f-type">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">หน่วยงาน / หอผู้ป่วย <span>*</span></label>
+          <select class="form-select" id="f-ward">
+            <option value="" disabled selected>เลือกหน่วยงาน...</option>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม">
+              <option>หอผู้ป่วย สก.3</option>
+              <option>หอผู้ป่วย สก.4</option>
+              <option>หอผู้ป่วย สก.5</option>
+              <option>หอผู้ป่วย สก.6</option>
+              <option>หอผู้ป่วยสงฆ์อาพาธ</option>
+              <option>หอผู้ป่วยสงฆ์พิเศษ 2+3</option>
+              <option>หอผู้ป่วยสามัญติดเชื้อ ธารน้ำใจ 1</option>
+              <option>หอผู้ป่วยสามัญติดเชื้อ ธารน้ำใจ 2</option>
+              <option>หอผู้ป่วยพิเศษอายุรกรรมชลาทรล่าง</option>
+              <option>หอผู้ป่วยพิเศษอายุรกรรมชลาทรบน</option>
+              <option>หอผู้ป่วย Low Immune ธนจ.4</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยศัลยกรรม">
+              <option>หอผู้ป่วยชลาทิศ 1</option>
+              <option>หอผู้ป่วยชลาทิศ 2</option>
+              <option>หอผู้ป่วยชลาทิศ 3</option>
+              <option>หอผู้ป่วยชลาทิศ 4</option>
+              <option>หอผู้ป่วยพิเศษศัลยกรรม ฉ.7</option>
+              <option>หอผู้ป่วยพิเศษศัลยกรรม ฉ.8</option>
+              <option>หอผู้ป่วยพิเศษศัลยกรรม Ex.9</option>
+              <option>หอผู้ป่วยแผลไหม้</option>
+              <option>หอผู้ป่วยเคมีบำบัด</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยสูติ-นรีเวช">
+              <option>หอผู้ป่วยหลังคลอด</option>
+              <option>ห้องคลอด (LR)</option>
+              <option>หอผู้ป่วยนรีเวชกรรม</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยกุมารเวชกรรม">
+              <option>หอผู้ป่วยกุมาร 1</option>
+              <option>หอผู้ป่วยกุมาร 2</option>
+              <option>NICU</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยวิกฤต">
+              <option>ห้องไอซียู (ICU)</option>
+              <option>ห้องฉุกเฉิน (ER)</option>
+              <option>CCU</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานอื่นๆ">
+              <option>ห้องผ่าตัด (OR)</option>
+              <option>ห้องผู้ป่วยนอก (OPD)</option>
+              <option>งานเภสัชกรรม</option>
+              <option>งานรังสีวิทยา</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ชื่อผลงาน <span>*</span></label>
+          <input type="text" class="form-control" id="f-title" placeholder="ระบุชื่อผลงานวิชาการ...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ผู้จัดทำ / ทีม <span>*</span></label>
+          <input type="text" class="form-control" id="f-author" placeholder="ชื่อ-นามสกุล หรือชื่อทีม...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ปีงบประมาณ</label>
+          <select class="form-select" id="f-year">
+            <option value="2567">2567</option>
+            <option value="2568" selected>2568</option>
+            <option value="2569">2569</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ลิงก์ผลงาน (Google Drive / PDF)</label>
+          <input type="url" class="form-control" id="f-link" placeholder="https://drive.google.com/...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">หมายเหตุ</label>
+          <textarea class="form-control" id="f-note" rows="2" style="resize:vertical;" placeholder="ข้อมูลเพิ่มเติม (ถ้ามี)..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-success btn-block" onclick="saveRecord()">
+            <span id="save-btn-text">บันทึกลง Google Sheets</span>
+          </button>
+          <button class="btn btn-outline" onclick="resetForm()" style="min-width:90px;">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <div class="card">
+      <div class="card-header">
+        <h2>📂 รายการผลงานทั้งหมด</h2>
+        <span class="badge" id="list-count">0 รายการ</span>
+      </div>
+      <div class="card-body" style="padding-bottom:12px;">
+        <div class="filter-bar">
+          <div class="search-wrap">
+            <input type="text" id="search-input" placeholder="ค้นหาชื่อผลงาน, ผู้จัดทำ..." oninput="applyFilters()">
+          </div>
+          <select class="filter-select" id="filter-type" onchange="applyFilters()">
+            <option value="">ทุกประเภท</option>
+            <option value="วิจัย">วิจัย</option>
+            <option value="R2R">R2R</option>
+            <option value="CQI">CQI</option>
+            <option value="นวัตกรรม">นวัตกรรม</option>
+          </select>
+          <select class="filter-select" id="filter-ward" onchange="applyFilters()">
+            <option value="">ทุกหน่วยงาน</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ประเภท</th>
+              <th>ชื่อผลงาน / ผู้จัดทำ</th>
+              <th>หน่วยงาน</th>
+              <th>ปี</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="records-body"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display:none;"><p>ไม่พบผลงานที่ตรงกับเงื่อนไข</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="view-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>📄 รายละเอียดผลงาน</h3><button class="modal-close" onclick="closeModal('view-modal')">×</button></div>
+    <div class="modal-body" id="view-modal-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>🗑️ ยืนยันการลบ</h3><button class="modal-close" onclick="closeModal('delete-modal')">×</button></div>
+    <div class="modal-body">คุณต้องการลบผลงานนี้ออกจากระบบใช่หรือไม่?</div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('delete-modal')">ยกเลิก</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDelete()">🗑️ ลบผลงาน</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span id="toast-msg"></span></div>
+
+<script>
+// ─── SETTINGS ────────────────────────────────────────────────────────────────
+// ลิงก์ Apps Script ของคุณ
+const GAS_URL = 'https://script.google.com/macros/s/AKfycbyyGF8yYXy6ELT3ojMsrruhSHDKM6LegMxoxoPixuuszVW6FvRLRo0e5wU9g8ru-30q/exec';
+
+let records = [];
+let editingId = null;
+let deleteTargetId = null;
+
+// ─── AUTH / LOGIN ─────────────────────────────────────────────────────────────
+window.onload = () => {
+  if (sessionStorage.getItem('isLoggedIn') === 'true') {
+    document.getElementById('login-overlay').style.display = 'none';
+    fetchData();
+  }
+};
+
+function checkLogin() {
+  const u = document.getElementById('login-user').value;
+  const p = document.getElementById('login-pass').value;
+  if (u === 'admin' && p === '1234') { // <--- เปลี่ยน Username / Password ตรงนี้
+    sessionStorage.setItem('isLoggedIn', 'true');
+    document.getElementById('login-overlay').style.opacity = '0';
+    setTimeout(() => {
+      document.getElementById('login-overlay').style.display = 'none';
+      fetchData();
+    }, 300);
+  } else {
+    document.getElementById('login-error').style.display = 'block';
+  }
+}
+
+function logout() {
+  sessionStorage.removeItem('isLoggedIn');
+  location.reload();
+}
+
+// ─── API CONNECT ──────────────────────────────────────────────────────────────
+async function fetchData() {
+  showLoading('กำลังโหลดข้อมูลจาก Google Sheets...');
+  try {
+    const res = await fetch(GAS_URL + "?action=read");
+    if(res.ok) {
+      records = await res.json();
+    }
+  } catch(e) {
+    console.error(e);
+    showToast('ดึงข้อมูลไม่ได้ ใช้งานโหมด Offline ชั่วคราว', 'warn');
+  }
+  populateWardFilter();
+  applyFilters();
+  updateStats();
+  hideLoading();
+}
+
+async function syncToGoogleSheets(payload, msgSuccess) {
+  showLoading('กำลังบันทึกข้อมูล...');
+  try {
+    // ใช้ POST ส่งข้อมูลแบบ plain text/JSON ไปยัง Apps Script
+    await fetch(GAS_URL, {
+      method: 'POST',
+      body: JSON.stringify(payload)
+    });
+    showToast(msgSuccess, 'success');
+    await fetchData(); // โหลดข้อมูลใหม่ล่าสุดหลังแก้ไข
+  } catch(e) {
+    showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
+  }
+  hideLoading();
+}
+
+// ─── UI HELPERS ───────────────────────────────────────────────────────────────
+function showLoading(txt) {
+  document.getElementById('loading-text').textContent = txt;
+  document.getElementById('loading-overlay').style.display = 'flex';
+}
+function hideLoading() { document.getElementById('loading-overlay').style.display = 'none'; }
+
+function updateStats() {
+  document.getElementById('stat-total').textContent = records.length;
+  document.getElementById('stat-research').textContent = records.filter(r=>r.type==='วิจัย'||r.type==='R2R').length;
+  document.getElementById('stat-cqi').textContent = records.filter(r=>r.type==='CQI').length;
+  document.getElementById('stat-innov').textContent = records.filter(r=>r.type==='นวัตกรรม').length;
+}
+
+function selectType(el) {
+  document.querySelectorAll('.type-pill').forEach(p=>p.classList.remove('active'));
+  el.classList.add('active');
+  document.getElementById('f-type').value = el.dataset.val;
+}
+
+// ─── CRUD ─────────────────────────────────────────────────────────────────────
+function saveRecord() {
+  const type = document.getElementById('f-type').value;
+  const ward = document.getElementById('f-ward').value;
+  const title = document.getElementById('f-title').value.trim();
+  const author = document.getElementById('f-author').value.trim();
+  const year = document.getElementById('f-year').value;
+  const link = document.getElementById('f-link').value.trim();
+  const note = document.getElementById('f-note').value.trim();
+
+  const selOpt = document.getElementById('f-ward').options[document.getElementById('f-ward').selectedIndex];
+  const dept = selOpt && selOpt.parentNode.tagName==='OPTGROUP' ? selOpt.parentNode.label : '';
+
+  if (!type || !ward || !title || !author) {
+    showToast('กรุณากรอกข้อมูลให้ครบถ้วน', 'error'); return;
+  }
+
+  const payload = {
+    action: editingId ? 'update' : 'create',
+    data: { id: editingId || Date.now().toString(), type, dept, ward, title, author, year, link, note }
+  };
+
+  syncToGoogleSheets(payload, editingId ? '✅ อัปเดตผลงานสำเร็จ' : '✅ บันทึกผลงานใหม่สำเร็จ');
+  resetForm();
+}
+
+function editRecord(id) {
+  const r = records.find(r=>r.id==id);
+  if (!r) return;
+  editingId = id;
+  
+  document.querySelectorAll('.type-pill').forEach(p=>{
+    p.classList.remove('active');
+    if(p.dataset.val===r.type) p.classList.add('active');
+  });
+  document.getElementById('f-type').value = r.type;
+  document.getElementById('f-ward').value = r.ward;
+  document.getElementById('f-title').value = r.title;
+  document.getElementById('f-author').value = r.author;
+  document.getElementById('f-year').value = r.year;
+  document.getElementById('f-link').value = r.link;
+  document.getElementById('f-note').value = r.note;
+
+  document.getElementById('form-heading').textContent = '✏️ แก้ไขผลงาน';
+  document.getElementById('edit-banner').classList.add('open');
+  window.scrollTo(0,0);
+}
+
+function promptDelete(id) {
+  deleteTargetId = id;
+  openModal('delete-modal');
+}
+
+function confirmDelete() {
+  if (!deleteTargetId) return;
+  const payload = { action: 'delete', data: { id: deleteTargetId } };
+  closeModal('delete-modal');
+  syncToGoogleSheets(payload, '🗑️ ลบผลงานสำเร็จ');
+  deleteTargetId = null;
+}
+
+// ─── FILTER & RENDER ──────────────────────────────────────────────────────────
+function applyFilters() {
+  const q = document.getElementById('search-input').value.toLowerCase();
+  const t = document.getElementById('filter-type').value;
+  const w = document.getElementById('filter-ward').value;
+  
+  const filtered = records.filter(r => 
+    (!q || r.title.toLowerCase().includes(q) || r.author.toLowerCase().includes(q)) &&
+    (!t || r.type === t) && (!w || r.ward === w)
+  );
+  
+  const tbody = document.getElementById('records-body');
+  document.getElementById('list-count').textContent = filtered.length + ' รายการ';
+  
+  if (!filtered.length) {
+    tbody.innerHTML = '';
+    document.getElementById('empty-state').style.display = 'block';
+  } else {
+    document.getElementById('empty-state').style.display = 'none';
+    tbody.innerHTML = filtered.map(r => `
+      <tr>
+        <td><span class="type-tag tag-${r.type}">${r.type}</span></td>
+        <td class="td-title">${r.title}<small>${r.author}</small></td>
+        <td style="font-size:12px;color:var(--muted);">${r.ward}</td>
+        <td style="font-size:12px;">${r.year}</td>
+        <td>
+          <div class="action-btns">
+            <button class="btn btn-sm btn-outline" onclick="viewRecord(${r.id})">👁️</button>
+            <button class="btn btn-sm btn-warn" onclick="editRecord(${r.id})">✏️</button>
+            <button class="btn btn-sm btn-danger" onclick="promptDelete(${r.id})">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    `).join('');
+  }
+}
+
+function populateWardFilter() {
+  const wards = [...new Set(records.map(r=>r.ward))].sort();
+  const sel = document.getElementById('filter-ward');
+  sel.innerHTML = '<option value="">ทุกหน่วยงาน</option>' + wards.map(w=>`<option>${w}</option>`).join('');
+}
+
+function viewRecord(id) {
+  const r = records.find(r=>r.id==id);
+  document.getElementById('view-modal-body').innerHTML = `
+    <div class="detail-row"><span class="detail-label">ประเภท</span><span class="detail-val">${r.type}</span></div>
+    <div class="detail-row"><span class="detail-label">ชื่องาน</span><span class="detail-val">${r.title}</span></div>
+    <div class="detail-row"><span class="detail-label">ผู้จัดทำ</span><span class="detail-val">${r.author}</span></div>
+    <div class="detail-row"><span class="detail-label">หน่วยงาน</span><span class="detail-val">${r.ward}</span></div>
+  `;
+  openModal('view-modal');
+}
+
+function resetForm() {
+  editingId = null;
+  document.getElementById('f-title').value = '';
+  document.getElementById('f-author').value = '';
+  document.getElementById('f-link').value = '';
+  document.getElementById('f-note').value = '';
+  document.getElementById('edit-banner').classList.remove('open');
+  document.getElementById('form-heading').textContent = '➕ เพิ่มผลงานวิชาการ';
+}
+
+function showToast(msg, type='success') {
+  const t = document.getElementById('toast');
+  t.className = type;
+  document.getElementById('toast-msg').textContent = msg;
+  t.classList.add('show');
+  setTimeout(() => t.classList.remove('show'), 3000);
+}
+
+function openModal(id) { document.getElementById(id).classList.add('open'); }
+function closeModal(id) { document.getElementById(id).classList.remove('open'); }
+</script>
+</body>
+</html>

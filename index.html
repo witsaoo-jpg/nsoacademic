@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ระบบผลงานวิชาการ — โรงพยาบาลชลบุรี</title>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@300;400;500;600;700&family=IBM+Plex+Sans+Thai:wght@300;400;500;600;700&family=Noto+Serif+Thai:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<div id="login-overlay">
+  <div class="login-box">
+    <h2>🏥 เข้าสู่ระบบ<br><small style="font-size:14px;color:var(--muted);">ระบบผลงานวิชาการ</small></h2>
+    <input type="text" id="login-user" class="form-control" placeholder="ชื่อผู้ใช้ (admin)" style="margin-bottom:10px;">
+    <input type="password" id="login-pass" class="form-control" placeholder="รหัสผ่าน (1234)" style="margin-bottom:16px;" onkeypress="if(event.key==='Enter') checkLogin()">
+    <button class="btn btn-primary btn-block" onclick="checkLogin()">เข้าสู่ระบบ</button>
+    <p id="login-error" style="color:var(--danger);font-size:13px;display:none;margin-top:12px;">ชื่อผู้ใช้หรือรหัสผ่านไม่ถูกต้อง!</p>
+  </div>
+</div>
+
+<div id="loading-overlay">
+  <div class="spinner"></div>
+  <span id="loading-text">กำลังประสานข้อมูลกับระบบ...</span>
+</div>
+
+<header>
+  <div class="header-inner">
+    <div class="logo-area">
+      <div class="logo-circle">🏥</div>
+      <div class="header-title">
+        <h1>ระบบผลงานวิชาการ โรงพยาบาลชลบุรี</h1>
+        <p>Academic Work Management System — Chonburi Hospital</p>
+      </div>
+    </div>
+    <div class="header-stats">
+      <div class="stat-badge"><div class="num" id="stat-total">0</div><div class="lbl">ทั้งหมด</div></div>
+      <div class="stat-badge"><div class="num" id="stat-research">0</div><div class="lbl">วิจัย/R2R</div></div>
+      <div class="stat-badge"><div class="num" id="stat-cqi">0</div><div class="lbl">CQI</div></div>
+      <div class="stat-badge"><div class="num" id="stat-innov">0</div><div class="lbl">นวัตกรรม</div></div>
+      <button class="btn btn-sm" style="background:rgba(255,255,255,0.2);color:#fff;" onclick="logout()">ออกจากระบบ</button>
+    </div>
+  </div>
+</header>
+
+<div class="app">
+  <div>
+    <div class="card">
+      <div class="card-header">
+        <h2 id="form-heading">➕ เพิ่มผลงานวิชาการ</h2>
+        <span class="badge" id="form-mode-badge">ใหม่</span>
+      </div>
+      <div class="card-body">
+        <div class="edit-mode-banner" id="edit-banner">
+          ✏️ กำลังแก้ไขผลงาน — กรุณาตรวจสอบข้อมูลก่อนบันทึก
+        </div>
+        <input type="hidden" id="record-id">
+
+        <div class="form-group">
+          <div class="form-label">ประเภทผลงาน <span>*</span></div>
+          <div class="type-pills">
+            <div class="type-pill research" data-val="วิจัย" onclick="selectType(this)">🔬 วิจัย</div>
+            <div class="type-pill r2r" data-val="R2R" onclick="selectType(this)">📋 R2R</div>
+            <div class="type-pill cqi" data-val="CQI" onclick="selectType(this)">📈 CQI</div>
+            <div class="type-pill innov" data-val="นวัตกรรม" onclick="selectType(this)">💡 นวัตกรรม</div>
+          </div>
+          <input type="hidden" id="f-type">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">หน่วยงาน / หอผู้ป่วย <span>*</span></label>
+          <select class="form-select" id="f-ward">
+            <option value="" disabled selected>เลือกหน่วยงาน...</option>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยอายุรกรรม">
+              <option>หอผู้ป่วย สก.3</option>
+              <option>หอผู้ป่วย สก.4</option>
+              <option>หอผู้ป่วย สก.5</option>
+              <option>หอผู้ป่วย สก.6</option>
+              <option>หอผู้ป่วยสงฆ์อาพาธ</option>
+              <option>หอผู้ป่วยสงฆ์พิเศษ 2+3</option>
+              <option>หอผู้ป่วยสามัญติดเชื้อ ธารน้ำใจ 1</option>
+              <option>หอผู้ป่วยสามัญติดเชื้อ ธารน้ำใจ 2</option>
+              <option>หอผู้ป่วยพิเศษอายุรกรรมชลาทรล่าง</option>
+              <option>หอผู้ป่วยพิเศษอายุรกรรมชลาทรบน</option>
+              <option>หอผู้ป่วย Low Immune ธนจ.4</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยศัลยกรรม">
+              <option>หอผู้ป่วยชลาทิศ 1</option>
+              <option>หอผู้ป่วยชลาทิศ 2</option>
+              <option>หอผู้ป่วยชลาทิศ 3</option>
+              <option>หอผู้ป่วยชลาทิศ 4</option>
+              <option>หอผู้ป่วยพิเศษศัลยกรรม ฉ.7</option>
+              <option>หอผู้ป่วยพิเศษศัลยกรรม ฉ.8</option>
+              <option>หอผู้ป่วยพิเศษศัลยกรรม Ex.9</option>
+              <option>หอผู้ป่วยแผลไหม้</option>
+              <option>หอผู้ป่วยเคมีบำบัด</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยสูติ-นรีเวช">
+              <option>หอผู้ป่วยหลังคลอด</option>
+              <option>ห้องคลอด (LR)</option>
+              <option>หอผู้ป่วยนรีเวชกรรม</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยกุมารเวชกรรม">
+              <option>หอผู้ป่วยกุมาร 1</option>
+              <option>หอผู้ป่วยกุมาร 2</option>
+              <option>NICU</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานการพยาบาลผู้ป่วยวิกฤต">
+              <option>ห้องไอซียู (ICU)</option>
+              <option>ห้องฉุกเฉิน (ER)</option>
+              <option>CCU</option>
+            </optgroup>
+            
+            <optgroup label="กลุ่มงานอื่นๆ">
+              <option>ห้องผ่าตัด (OR)</option>
+              <option>ห้องผู้ป่วยนอก (OPD)</option>
+              <option>งานเภสัชกรรม</option>
+              <option>งานรังสีวิทยา</option>
+            </optgroup>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ชื่อผลงาน <span>*</span></label>
+          <input type="text" class="form-control" id="f-title" placeholder="ระบุชื่อผลงานวิชาการ...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ผู้จัดทำ / ทีม <span>*</span></label>
+          <input type="text" class="form-control" id="f-author" placeholder="ชื่อ-นามสกุล หรือชื่อทีม...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ปีงบประมาณ</label>
+          <select class="form-select" id="f-year">
+            <option value="2567">2567</option>
+            <option value="2568" selected>2568</option>
+            <option value="2569">2569</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">ลิงก์ผลงาน (Google Drive / PDF)</label>
+          <input type="url" class="form-control" id="f-link" placeholder="https://drive.google.com/...">
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">หมายเหตุ</label>
+          <textarea class="form-control" id="f-note" rows="2" style="resize:vertical;" placeholder="ข้อมูลเพิ่มเติม (ถ้ามี)..."></textarea>
+        </div>
+
+        <div class="form-actions">
+          <button class="btn btn-success btn-block" onclick="saveRecord()">
+            <span id="save-btn-text">บันทึกลง Google Sheets</span>
+          </button>
+          <button class="btn btn-outline" onclick="resetForm()" style="min-width:90px;">ยกเลิก</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel-right">
+    <div class="card">
+      <div class="card-header">
+        <h2>📂 รายการผลงานทั้งหมด</h2>
+        <span class="badge" id="list-count">0 รายการ</span>
+      </div>
+      <div class="card-body" style="padding-bottom:12px;">
+        <div class="filter-bar">
+          <div class="search-wrap">
+            <input type="text" id="search-input" placeholder="ค้นหาชื่อผลงาน, ผู้จัดทำ..." oninput="applyFilters()">
+          </div>
+          <select class="filter-select" id="filter-type" onchange="applyFilters()">
+            <option value="">ทุกประเภท</option>
+            <option value="วิจัย">วิจัย</option>
+            <option value="R2R">R2R</option>
+            <option value="CQI">CQI</option>
+            <option value="นวัตกรรม">นวัตกรรม</option>
+          </select>
+          <select class="filter-select" id="filter-ward" onchange="applyFilters()">
+            <option value="">ทุกหน่วยงาน</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>ประเภท</th>
+              <th>ชื่อผลงาน / ผู้จัดทำ</th>
+              <th>หน่วยงาน</th>
+              <th>ปี</th>
+              <th>จัดการ</th>
+            </tr>
+          </thead>
+          <tbody id="records-body"></tbody>
+        </table>
+        <div id="empty-state" class="empty-state" style="display:none;"><p>ไม่พบผลงานที่ตรงกับเงื่อนไข</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div style="text-align: center; padding: 10px 20px 30px; font-size: 13px; color: var(--muted); font-weight: 500;">
+  พัฒนาโดย พว.วิษณุกรณ์ โอยา (รพ.ชลบุรี)
+</div>
+
+<div class="modal-overlay" id="view-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>📄 รายละเอียดผลงาน</h3><button class="modal-close" onclick="closeModal('view-modal')">×</button></div>
+    <div class="modal-body" id="view-modal-body"></div>
+  </div>
+</div>
+
+<div class="modal-overlay" id="delete-modal">
+  <div class="modal">
+    <div class="modal-header"><h3>🗑️ ยืนยันการลบ</h3><button class="modal-close" onclick="closeModal('delete-modal')">×</button></div>
+    <div class="modal-body">คุณต้องการลบผลงานนี้ออกจากระบบใช่หรือไม่?</div>
+    <div class="modal-footer">
+      <button class="btn btn-outline btn-sm" onclick="closeModal('delete-modal')">ยกเลิก</button>
+      <button class="btn btn-danger btn-sm" onclick="confirmDelete()">🗑️ ลบผลงาน</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"><span id="toast-msg"></span></div>
+
+<script src="script.js"></script>
+</body>
+</html>
