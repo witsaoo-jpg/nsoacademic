@@ -1,5 +1,4 @@
 // ─── SETTINGS ────────────────────────────────────────────────────────────────
-// ลิงก์ Apps Script ของคุณ
 const GAS_URL = 'https://script.google.com/macros/s/AKfycbyyGF8yYXy6ELT3ojMsrruhSHDKM6LegMxoxoPixuuszVW6FvRLRo0e5wU9g8ru-30q/exec';
 
 let records = [];
@@ -10,6 +9,7 @@ let deleteTargetId = null;
 window.onload = () => {
   if (sessionStorage.getItem('isLoggedIn') === 'true') {
     document.getElementById('login-overlay').style.display = 'none';
+    applyRolePermissions(); // เช็คสิทธิ์เมื่อโหลดหน้า
     fetchData();
   }
 };
@@ -17,21 +17,53 @@ window.onload = () => {
 function checkLogin() {
   const u = document.getElementById('login-user').value;
   const p = document.getElementById('login-pass').value;
-  if (u === 'admin' && p === '1234') { // <--- เปลี่ยน Username / Password ตรงนี้
+
+  // 1. สิทธิ์ Admin (จัดการได้ทั้งหมด)
+  if (u === 'admin' && p === '1234') { 
     sessionStorage.setItem('isLoggedIn', 'true');
-    document.getElementById('login-overlay').style.opacity = '0';
-    setTimeout(() => {
-      document.getElementById('login-overlay').style.display = 'none';
-      fetchData();
-    }, 300);
-  } else {
+    sessionStorage.setItem('role', 'admin');
+    finishLogin();
+  } 
+  // 2. สิทธิ์ น้องๆ/ผู้ใช้ทั่วไป (ดูได้อย่างเดียว)
+  else if (u === 'user' && p === '1234') { 
+    sessionStorage.setItem('isLoggedIn', 'true');
+    sessionStorage.setItem('role', 'user');
+    finishLogin();
+  } 
+  else {
     document.getElementById('login-error').style.display = 'block';
   }
 }
 
+function finishLogin() {
+  document.getElementById('login-overlay').style.opacity = '0';
+  setTimeout(() => {
+    document.getElementById('login-overlay').style.display = 'none';
+    applyRolePermissions(); // จัดการหน้าตาตามสิทธิ์
+    fetchData();
+  }, 300);
+}
+
 function logout() {
-  sessionStorage.removeItem('isLoggedIn');
+  sessionStorage.clear();
   location.reload();
+}
+
+// ─── ROLE MANAGEMENT ──────────────────────────────────────────────────────────
+function applyRolePermissions() {
+  const role = sessionStorage.getItem('role');
+  const formPanel = document.getElementById('form-panel');
+  const appContainer = document.getElementById('app-container');
+
+  if (role === 'user') {
+    // ถ้าระดับ User ให้ซ่อนฟอร์มด้านซ้าย และขยายตารางให้เต็มจอ
+    if (formPanel) formPanel.style.display = 'none';
+    if (appContainer) appContainer.style.gridTemplateColumns = '1fr'; 
+  } else {
+    // ถ้าระดับ Admin ให้แสดงตามปกติ
+    if (formPanel) formPanel.style.display = 'block';
+    if (appContainer) appContainer.style.gridTemplateColumns = '380px 1fr';
+  }
 }
 
 // ─── API CONNECT ──────────────────────────────────────────────────────────────
@@ -55,13 +87,9 @@ async function fetchData() {
 async function syncToGoogleSheets(payload, msgSuccess) {
   showLoading('กำลังบันทึกข้อมูล...');
   try {
-    // ใช้ POST ส่งข้อมูลแบบ plain text/JSON ไปยัง Apps Script
-    await fetch(GAS_URL, {
-      method: 'POST',
-      body: JSON.stringify(payload)
-    });
+    await fetch(GAS_URL, { method: 'POST', body: JSON.stringify(payload) });
     showToast(msgSuccess, 'success');
-    await fetchData(); // โหลดข้อมูลใหม่ล่าสุดหลังแก้ไข
+    await fetchData(); 
   } catch(e) {
     showToast('เกิดข้อผิดพลาดในการเชื่อมต่อ', 'error');
   }
@@ -154,6 +182,7 @@ function applyFilters() {
   const q = document.getElementById('search-input').value.toLowerCase();
   const t = document.getElementById('filter-type').value;
   const w = document.getElementById('filter-ward').value;
+  const role = sessionStorage.getItem('role'); // อ่านสิทธิ์
   
   const filtered = records.filter(r => 
     (!q || r.title.toLowerCase().includes(q) || r.author.toLowerCase().includes(q)) &&
@@ -168,32 +197,47 @@ function applyFilters() {
     document.getElementById('empty-state').style.display = 'block';
   } else {
     document.getElementById('empty-state').style.display = 'none';
-    tbody.innerHTML = filtered.map(r => `
-      <tr>
-        <td><span class="type-tag tag-${r.type}">${r.type}</span></td>
-        <td class="td-title">${r.title}<small>${r.author}</small></td>
-        <td style="font-size:12px;color:var(--muted);">${r.ward}</td>
-        <td style="font-size:12px;">${r.year}</td>
-        
-        <td>
-          ${r.link ? `<a href="${r.link}" target="_blank" style="color:var(--blue);text-decoration:none;font-size:12px;font-weight:600;">🔗 เปิดดู</a>` : '<span style="color:#ccc;font-size:12px;">-</span>'}
-        </td>
+    tbody.innerHTML = filtered.map(r => {
+      // ✅ สร้างปุ่มแสดงผลตามสิทธิ์ (Admin / User)
+      let actionBtnsHTML = '';
+      if (role === 'admin') {
+        actionBtnsHTML = `
+          <button class="btn btn-sm btn-outline" onclick="viewRecord('${r.id}')">👁️</button>
+          <button class="btn btn-sm btn-warn" onclick="editRecord('${r.id}')">✏️</button>
+          <button class="btn btn-sm btn-danger" onclick="promptDelete('${r.id}')">🗑️</button>
+        `;
+      } else {
+        actionBtnsHTML = `
+          <button class="btn btn-sm btn-outline" onclick="viewRecord('${r.id}')">👁️ ดูรายละเอียด</button>
+        `;
+      }
 
-        <td>
-          <div class="action-btns">
-            <button class="btn btn-sm btn-outline" onclick="viewRecord('${r.id}')">👁️</button>
-            <button class="btn btn-sm btn-warn" onclick="editRecord('${r.id}')">✏️</button>
-            <button class="btn btn-sm btn-danger" onclick="promptDelete('${r.id}')">🗑️</button>
-          </div>
-        </td>
-      </tr>
-    `).join('');
+      return `
+        <tr>
+          <td><span class="type-tag tag-${r.type}">${r.type}</span></td>
+          <td class="td-title">${r.title}<small>${r.author}</small></td>
+          <td style="font-size:12px;color:var(--muted);">${r.ward}</td>
+          <td style="font-size:12px;">${r.year}</td>
+          <td>
+            ${r.link ? `<a href="${r.link}" target="_blank" style="color:var(--blue);text-decoration:none;font-size:12px;font-weight:600;">🔗 เปิดดู</a>` : '<span style="color:#ccc;font-size:12px;">-</span>'}
+          </td>
+          <td>
+            <div class="action-btns">${actionBtnsHTML}</div>
+          </td>
+        </tr>
+      `;
+    }).join('');
   }
+}
+
+function populateWardFilter() {
+  const wards = [...new Set(records.map(r=>r.ward))].sort();
+  const sel = document.getElementById('filter-ward');
+  sel.innerHTML = '<option value="">ทุกหน่วยงาน</option>' + wards.map(w=>`<option>${w}</option>`).join('');
 }
 
 function viewRecord(id) {
   const r = records.find(r=>r.id==id);
-  // ✨ เพิ่มการแสดงผล ลิงก์ และ หมายเหตุ ในหน้าต่างรายละเอียด
   document.getElementById('view-modal-body').innerHTML = `
     <div class="detail-row"><span class="detail-label">ประเภท</span><span class="detail-val">${r.type}</span></div>
     <div class="detail-row"><span class="detail-label">ชื่องาน</span><span class="detail-val">${r.title}</span></div>
